@@ -1,13 +1,16 @@
-# Sample Smartenit Client program
-# Author: Dhawal Doshi
-# Last Edit: Dec 10, 2013
-# Built and Tested with Python version 2.7.5
+'''
+Sample Smartenit Client program
+Author: Dhawal Doshi
+Ported to python3 by: Ahmed Khan
+Last Edit: Oct 19, 2015
+Built and Tested with Python version 2.7.5 and 3.4.3
+'''
 
 # import modules
 import socket
 import hashlib
 from xml.dom.minidom import parseString
-import thread
+import _thread
 import time
 import os
 
@@ -29,16 +32,16 @@ s.connect((HOST, PORT))
 
 # Functions
 def connect(HOST, PORT, PASSWORD):
-    hash_object = hashlib.sha1(PASSWORD)
+    hash_object = hashlib.sha1(PASSWORD.encode())
     password = hash_object.hexdigest()
     #print(hex_dig)
     s.send('<zbpPacket><Object>ZBP_System</Object><methodName>Sys_Authenticate</methodName><Arguments> \
-    <Argument type="string">'+password+'</Argument></Arguments><id>12625</id></zbpPacket>\0')
+    <Argument type="string">{}</Argument></Arguments><id>12625</id></zbpPacket>\0'.format(password).encode())
 
 
 def getnumnodes():
     s.send('<zbpPacket><Object>ZBP_Node</Object><methodName>Node_GetNumNodes</methodName><Arguments> \
-    </Arguments></zbpPacket>\0')
+    </Arguments></zbpPacket>\0'.encode())
 
 
 def Node_GetNode(NODEID):
@@ -49,17 +52,17 @@ def Node_GetNode(NODEID):
     # pkt = '<zbpPacket><Object>ZBP_Node</Object><methodName>Node_GetNode</methodName><Arguments> \
     # <Argument type="ushort">'+NODEID+'</Argument></Arguments></zbpPacket>\0'
     # print '\r\n',pkt
-    s.send(pkt)
+    s.send(pkt.encode())
 
 
 def Node_ClusterCommand(deviceid):
     #x = int(deviceid, 16)
     #nodeid_dec = str(x)
     s.send('<zbpPacket><Object>ZBP_Node</Object><methodName>Node_ClusterCommand</methodName>\
-    <Arguments><Argument type="uchar" base="10">146</Argument><Argument type="ushort" base="10">'
-           + str(deviceid) + '</Argument><Argument type="uchar" base="10">2</Argument><Argument type="ushort"\
-            base="10">1794</Argument><Argument type="uchar" base="10">0</Argument><Argument type="QByteArray"\
-             base="10">[2,0,0,4,0]</Argument></Arguments><id>7</id></zbpPacket>\0')
+    <Arguments><Argument type="uchar" base="10">146</Argument><Argument type="ushort" base="10">\
+    {}</Argument><Argument type="uchar" base="10">2</Argument><Argument type="ushort"\
+    base="10">1794</Argument><Argument type="uchar" base="10">0</Argument><Argument type="QByteArray"\
+    base="10">[2,0,0,4,0]</Argument></Arguments><id>7</id></zbpPacket>\0'.format(str(deviceid)).encode())
 
 
 def getnode_details():
@@ -109,7 +112,6 @@ def parseXML(DATA):
                 if pos != -1:
                     pos2 = DATA.find("]")
                     if pos2 != -1:
-                        global NODELIST
                         NODELIST = DATA[pos+1:pos2]
                         NODELIST = NODELIST.split(',')
                         print('\nNodeList Populated: \n', NODELIST)
@@ -129,7 +131,6 @@ def parseXML(DATA):
                         deviceid = int(args[1].firstChild.nodeValue, 16)
                         #print deviceid
                         #print("\n")
-                        global SMARTPLUGS
                         SMARTPLUGS.append(deviceid)
                         print(SMARTPLUGS)
     pos = DATA.find("<zbpPacketSignal>")
@@ -197,7 +198,6 @@ def parseXML(DATA):
                                             byte6 = str(format(meterdata[i+9], 'x'))
                                             if(len(byte6) == 1):
                                                 byte6 = '0'+byte6
-                                            global kwh
                                             kwh = float(int(str(byte1+byte2+byte3+byte4+byte5+byte6), 16))
                                             # kwh = float(int(str(format(meterdata[i+4],'x'))+\
                                             # str(format(meterdata[i+5],'x'))+str(format(meterdata[i+6],'x'))\
@@ -223,7 +223,6 @@ def parseXML(DATA):
                                             if(len(byte3) == 1):
                                                 byte3 = '0'+byte3
 
-                                            global power
                                             power = float(int(str(byte1+byte2+byte3), 16))
                                             # power = float(int(str(format(meterdata[k+4],'x'))\
                                             # +str(format(meterdata[k+5],'x'))\
@@ -276,7 +275,6 @@ def parseXML(DATA):
                                             byte6 = str(format(meterdata[i+8], 'x'))
                                             if(len(byte6) == 1):
                                                 byte6 = '0'+byte6
-                                            global kwh
                                             kwh = float(int(str(byte1+byte2+byte3+byte4+byte5+byte6), 16))
                                             # kwh = float(int(str(format(meterdata[i+3],'x'))\
                                             # +str(format(meterdata[i+4],'x'))\
@@ -303,7 +301,6 @@ def parseXML(DATA):
                                             if(len(byte3) == 1):
                                                 byte3 = '0'+byte3
 
-                                            global power
                                             power = float(int(str(byte1+byte2+byte3), 16))
                                             # power = float(int(str(format(meterdata[k+3],'x'))\
                                             # +str(format(meterdata[k+4],'x'))\
@@ -348,10 +345,9 @@ def recvpkt(threadName, delay):
     while True:
         data = s.recv(1024)
         if len(data) > 0:
-            #print 'Received: \n', data.__len__(),repr(data)
-            parseXML(data)
+            #print 'Received: \n', dta.__len__(),repr(data)
+            parseXML(str(data))
         else:
-            print('Connection Closed, Re-connecting...')
             connect(HOST, PORT, PASSWORD)
 
 
@@ -363,9 +359,9 @@ def sendpkt():
 
 # Threads
 try:
-    thread.start_new_thread(recvpkt, ("[RX]", 0,))
-    thread.start_new_thread(getnode_details, ())
-    thread.start_new_thread(poll_smartplugs, ())
+    _thread.start_new_thread(recvpkt, ("[RX]", 0,))
+    _thread.start_new_thread(getnode_details, ())
+    _thread.start_new_thread(poll_smartplugs, ())
 except:
     print("Error: unable to start thread")
 

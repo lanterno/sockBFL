@@ -1,6 +1,5 @@
 import socketserver
 import threading
-import time
 
 
 class Mysocketserver(socketserver.BaseRequestHandler):
